@@ -1,10 +1,11 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
-from groq_client import generate
-from history import snapshot, restore
-from github import commit
+from server.groq_client import generate
+from server.history import snapshot, restore
+from server.github import commit
 import logging, time
+
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("ai-site-editor")
