@@ -104,10 +104,25 @@ app.post('/generate', async (req, res) => {
     console.log('Groq response status:', groqResponse.status);
 
     const content = groqResponse.data.choices[0].message.content;
-    const result = JSON.parse(content);
+    console.log('Groq raw content:', content);
+
+    let result;
+    try {
+      // Handle markdown-wrapped JSON (```json ... ```)
+      let jsonStr = content;
+      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (jsonMatch) {
+        jsonStr = jsonMatch[1];
+      }
+      result = JSON.parse(jsonStr);
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError.message);
+      return res.status(400).json({ error: `Failed to parse AI response: ${parseError.message}` });
+    }
 
     if (!result.files || typeof result.files !== 'object') {
-      return res.status(400).json({ error: 'Invalid AI response format' });
+      console.error('Missing files key in response:', result);
+      return res.status(400).json({ error: 'AI response missing "files" object. Got: ' + JSON.stringify(result).slice(0, 200) });
     }
 
     // Write preview files
