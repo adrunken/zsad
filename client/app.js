@@ -91,7 +91,8 @@ async function r() {
         });
 
         if (!response.ok) {
-            throw new Error(response.statusText);
+            const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+            throw new Error(error.error || response.statusText);
         }
 
         showMessage('Rollback successful!', 'success');
