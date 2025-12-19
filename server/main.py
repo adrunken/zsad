@@ -1,5 +1,6 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, FileResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 from pathlib import Path
 from server.groq_client import generate
 from server.history import snapshot, restore
@@ -10,9 +11,13 @@ import logging, time
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("ai-site-editor")
 
+class GenerateRequest(BaseModel):
+    prompt: str
+
+class RollbackRequest(BaseModel):
+    version: str
+
 app=FastAPI()
-app.mount("/site", StaticFiles(directory="site"), name="site")
-app.mount("/client", StaticFiles(directory="client"), name="client")
 
 SITE=Path("site")
 FILES={ "live.html": SITE/"live.html", "main.js": SITE/"main.js", "styles.css": SITE/"styles.css" }
@@ -33,15 +38,23 @@ async def log_errors(request: Request, call_next):
 def health():
     return {"status":"ok"}
 
+@app.get("/")
+async def root():
+    return FileResponse("client/index.html")
+
+@app.get("/app.js")
+async def app_js():
+    return FileResponse("client/app.js", media_type="application/javascript")
+
 @app.post("/generate")
-def gen(p:dict):
+def gen(request: GenerateRequest):
     global LAST_CALL
     now = time.time()
     if now - LAST_CALL < MIN_SECONDS:
         raise HTTPException(429, "Rate limit: wait a few seconds")
     LAST_CALL=now
 
-    prompt=p.get("prompt")
+    prompt=request.prompt
     if not prompt: raise HTTPException(400,"Missing prompt")
     current={k:v.read_text() for k,v in FILES.items()}
     result=generate(prompt,current).get("files")
@@ -70,8 +83,11 @@ def hist():
     return [p.name for p in (SITE/'.history').iterdir() if p.is_dir()]
 
 @app.post("/rollback")
-def rb(p:dict):
-    v = p.get("version")
+def rb(request: RollbackRequest):
+    v = request.version
     if not v: raise HTTPException(400,"Missing version")
     restore(v)
     return {"ok":True}
+
+app.mount("/site", StaticFiles(directory="site"), name="site")
+app.mount("/client", StaticFiles(directory="client"), name="client")
