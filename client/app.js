@@ -32,8 +32,8 @@ async function g() {
         });
 
         if (!response.ok) {
-            const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
-            throw new Error(error.detail || response.statusText);
+            const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+            throw new Error(error.error || response.statusText);
         }
 
         showMessage('Preview ready! Check the iframe below.', 'success');
