@@ -27,8 +27,16 @@ const MIN_SECONDS = 5;
 
 const SYSTEM_PROMPT = `You are an expert web engineer modifying an existing website.
 Preserve unrelated functionality and existing code.
-Return JSON with keys: files (object mapping filename to full new content).
-Do not explain. No markdown. Only JSON.`;
+Return ONLY valid JSON in this exact format:
+{
+  "files": {
+    "live.html": "complete HTML content here",
+    "main.js": "complete JavaScript content here",
+    "styles.css": "complete CSS content here"
+  }
+}
+Do not include any explanation, markdown, or text outside the JSON.
+Return all three files (live.html, main.js, styles.css) with their complete updated content.`;
 
 // Ensure history directory exists
 if (!fs.existsSync(HISTORY_DIR)) {
