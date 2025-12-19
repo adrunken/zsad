@@ -50,7 +50,8 @@ async function u() {
         const response = await fetch('/publish', { method: 'POST' });
 
         if (!response.ok) {
-            throw new Error(response.statusText);
+            const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+            throw new Error(error.error || response.statusText);
         }
 
         showMessage('Published successfully!', 'success');
